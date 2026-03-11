@@ -51,20 +51,6 @@
     }
 
     /* ── Optional count badge ───────────────────────────────── */
-    #count-badge {
-      position: fixed;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      color: #fff;
-      text-shadow: 0 0 12px rgba(255, 51, 102, 0.9), 0 0 30px rgba(255, 107, 53, 0.5);
-      z-index: 50;
-      pointer-events: none;
-      display: none;
-    }
 
 
 
@@ -179,6 +165,10 @@
           <stop offset="50%"  stop-color="#ff6b35"/>
           <stop offset="100%" stop-color="#ffd93d"/>
         </linearGradient>
+        <filter id="glowFilter" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
         <clipPath id="progressClip">
           <rect id="progressRect"
                 x="-10" y="0" width="644" height="360"
@@ -398,11 +388,23 @@
         C325.715454,50.781528 322.318054,53.084858 319.769684,57.487255
         C317.278503,61.790844 314.134766,65.716721 310.907684,70.423820
         z"/>
+      <!-- Centre badge: emoji + count -->
+      <g id="count-badge" style="display:none">
+        <text x="312" y="165"
+              text-anchor="middle" dominant-baseline="middle"
+              font-size="42" style="user-select:none">👍</text>
+        <text id="count-text" x="312" y="210"
+              text-anchor="middle" dominant-baseline="middle"
+              font-family="'Segoe UI', system-ui, sans-serif"
+              font-size="52" font-weight="800" letter-spacing="2"
+              fill="#fff"
+              filter="url(#glowFilter)">0</text>
+      </g>
     </svg>
   </div>
 
-  <!-- Optional like counter badge -->
-  <div id="count-badge">0</div>
+  <!-- Like counter lives inside the SVG so it scales with the track -->
+
 
   <!-- Config panel -->
   <div id="config">
@@ -467,6 +469,7 @@
 
     const progressRect = document.getElementById('progressRect');
     const countBadge   = document.getElementById('count-badge');
+    const countText    = document.getElementById('count-text');
     const statusEl     = document.getElementById('status');
     const CLIP_H = 360; // matches progressRect height
 
@@ -484,8 +487,8 @@
       maxLikes = parseInt(cfg.maxlikes || '100', 10);
       count    = parseInt(localStorage.getItem('likeCount') || '0', 10);
 
-      countBadge.textContent = count;
-      if (cfg.badgeVisible) countBadge.style.display = 'block';
+      countText.textContent = count;
+      if (cfg.badgeVisible) countBadge.style.display = 'inline';
 
       onPlatformChange();
       updateTrack();
@@ -506,7 +509,7 @@
         videoid:      document.getElementById('videoid').value,
         trigger:      document.getElementById('trigger').value,
         maxlikes:     document.getElementById('maxlikes').value,
-        badgeVisible: countBadge.style.display === 'block',
+        badgeVisible: countBadge.style.display === 'inline',
       }));
     }
 
@@ -520,14 +523,14 @@
     function addLike() {
       count++;
       localStorage.setItem('likeCount', count);
-      countBadge.textContent = count;
+      countText.textContent = count;
       updateTrack();
     }
 
     function resetCount() {
       count = 0;
       localStorage.setItem('likeCount', '0');
-      countBadge.textContent = '0';
+      countText.textContent = '0';
       updateTrack();
     }
 
@@ -545,7 +548,7 @@
     }
 
     function toggleBadge() {
-      countBadge.style.display = countBadge.style.display === 'block' ? 'none' : 'block';
+      countBadge.style.display = countBadge.style.display === 'inline' ? 'none' : 'inline';
       saveConfig();
     }
 
