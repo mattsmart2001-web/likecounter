@@ -352,19 +352,21 @@
       dimPath.setAttribute('d',    t.path);
       strokePath.setAttribute('d', t.path);
 
-      // Find the infield subpath: split the compound path at each M command,
-      // measure lengths, and use the shorter one (inner road boundary = infield).
+      // Find the infield subpath: the inner road boundary always has a smaller
+      // bounding box than the outer boundary, so pick the subpath with smaller bbox area.
       const parts = t.path.trim().split(/\s+(?=M)/);
       let infieldD = t.path;
       if (parts.length >= 2) {
         const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         trackSvg.appendChild(tmp);
         tmp.setAttribute('d', parts[0]);
-        const len0 = tmp.getTotalLength();
+        const bb0 = tmp.getBBox();
+        const area0 = bb0.width * bb0.height;
         tmp.setAttribute('d', parts[1]);
-        const len1 = tmp.getTotalLength();
+        const bb1 = tmp.getBBox();
+        const area1 = bb1.width * bb1.height;
         trackSvg.removeChild(tmp);
-        infieldD = len0 < len1 ? parts[0] : parts[1];
+        infieldD = area0 < area1 ? parts[0] : parts[1];
       }
       fillPath.setAttribute('d', infieldD);
 
