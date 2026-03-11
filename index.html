@@ -28,9 +28,6 @@
 
     #track-svg { width: 100%; height: 100%; }
 
-    #progressRect {
-      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    }
 
     .track-dim  { fill: rgba(255, 255, 255, 0.08); }
 
@@ -221,7 +218,7 @@
         <clipPath id="progressClip">
           <rect id="progressRect"
                 x="-10" y="0" width="644" height="360"
-                style="transform: translateY(360px)"/>
+                transform="translate(0,360)"/>
         </clipPath>
       </defs>
 
@@ -331,12 +328,12 @@
     <!-- ── D-pads ──────────────────────────────────────────── -->
     <div class="dpad-section">
 
-      <!-- Likes / emoji D-pad -->
+      <!-- Emoji D-pad -->
       <div class="dpad-col">
-        <div class="dpad-label">Likes &amp; emoji</div>
+        <div class="dpad-label">Emoji</div>
         <div class="dpad">
           <div class="dpad-empty"></div>
-          <button class="dpad-btn" onclick="addLike()"    title="+1 like">▲</button>
+          <div class="dpad-empty"></div>
           <div class="dpad-empty"></div>
 
           <button class="dpad-btn" onclick="prevEmoji()"  title="Previous emoji">◀</button>
@@ -344,7 +341,7 @@
           <button class="dpad-btn" onclick="nextEmoji()"  title="Next emoji">▶</button>
 
           <div class="dpad-empty"></div>
-          <button class="dpad-btn" onclick="removeLike()" title="-1 like">▼</button>
+          <div class="dpad-empty"></div>
           <div class="dpad-empty"></div>
         </div>
       </div>
@@ -614,7 +611,7 @@
     function updateTrack() {
       const progress   = Math.min(count / maxLikes, 1);
       const translateY = CLIP_H * (1 - progress);
-      progressRect.style.transform = `translateY(${translateY}px)`;
+      progressRect.setAttribute('transform', `translate(0,${translateY})`);
     }
 
     function addLike() {
