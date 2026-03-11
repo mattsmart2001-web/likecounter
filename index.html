@@ -256,7 +256,8 @@
       </div>
       <div class="cfg-field">
         <label>Max likes (= 100 % fill)</label>
-        <input id="maxlikes" type="number" value="100" min="1" max="99999"/>
+        <input id="maxlikes" type="number" value="100" min="1" max="99999"
+               onchange="maxLikes = parseInt(this.value, 10) || 100; updateTrack(); saveConfig()"/>
       </div>
     </div>
 
