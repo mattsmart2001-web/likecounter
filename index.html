@@ -19,7 +19,8 @@
     /* ── Track ─────────────────────────────────────────────── */
     .track-wrap {
       position: fixed;
-      inset: 0;
+      top: 0; left: 0; right: 0;
+      bottom: var(--panel-h, 185px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -65,23 +66,6 @@
       display: none;
     }
 
-    #test-btn {
-      position: fixed;
-      bottom: 14px;
-      right: 56px;
-      padding: 6px 14px;
-      background: rgba(255, 51, 102, 0.75);
-      border: none;
-      border-radius: 7px;
-      color: #fff;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      z-index: 200;
-      font-family: inherit;
-      transition: background 0.15s;
-    }
-    #test-btn:hover { background: rgba(255, 51, 102, 1); }
 
 
     /* ── Config panel ───────────────────────────────────────── */
@@ -420,9 +404,6 @@
   <!-- Optional like counter badge -->
   <div id="count-badge">0</div>
 
-  <!-- Test like button (visible in browser, unobtrusive in OBS) -->
-  <button id="test-btn" onclick="addLike()" title="Test like">+1</button>
-
   <!-- Config panel -->
   <div id="config">
     <h2>Stream config</h2>
@@ -469,6 +450,7 @@
       <button class="btn btn-ghost"   onclick="disconnect()">Disconnect</button>
       <button class="btn btn-ghost"   onclick="toggleBadge()">Toggle counter</button>
       <button class="btn btn-danger"  onclick="resetCount()">Reset count</button>
+      <button class="btn btn-ghost"   onclick="addLike()">+1 test</button>
     </div>
 
     <div id="status"></div>
@@ -669,6 +651,12 @@
     }
 
     // ── Init ───────────────────────────────────────────────────
+    function syncPanelHeight() {
+      const h = document.getElementById('config').offsetHeight;
+      document.documentElement.style.setProperty('--panel-h', h + 'px');
+    }
+    new ResizeObserver(syncPanelHeight).observe(document.getElementById('config'));
+
     loadConfig();
   </script>
 </body>
