@@ -320,6 +320,20 @@
     const statusEl       = document.getElementById('status');
 
     // ── Track switching ────────────────────────────────────────
+
+    // Sample N points along the path and return their average position.
+    // For a closed racing circuit this lands naturally in the infield.
+    function pathCentroid(pathEl, samples = 200) {
+      const len = pathEl.getTotalLength();
+      let sx = 0, sy = 0;
+      for (let i = 0; i < samples; i++) {
+        const pt = pathEl.getPointAtLength((i / samples) * len);
+        sx += pt.x;
+        sy += pt.y;
+      }
+      return { x: sx / samples, y: sy / samples };
+    }
+
     function loadTrack(name) {
       const t = TRACKS[name];
       if (!t) return;
@@ -331,7 +345,6 @@
       // Update clip rect dimensions
       const vbParts = t.viewBox.split(' ');
       const vbW = parseFloat(vbParts[2]);
-      const vbH = parseFloat(vbParts[3]);
       progressRect.setAttribute('width',  vbW + 20);
       progressRect.setAttribute('height', t.clipH);
 
@@ -340,9 +353,8 @@
       fillPath.setAttribute('d',   t.path);
       strokePath.setAttribute('d', t.path);
 
-      // Reposition centre badge
-      const cx = vbW / 2;
-      const cy = vbH / 2;
+      // Reposition badge at the true infield centre of this circuit
+      const { x: cx, y: cy } = pathCentroid(strokePath);
       badgeIcon.setAttribute('x', cx);
       badgeIcon.setAttribute('y', cy - 9);
       countText.setAttribute('x', cx);
