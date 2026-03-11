@@ -72,26 +72,33 @@
       overflow: visible;
     }
 
+    /* Dim base shape — always visible */
     .track-bg {
-      fill: none;
-      stroke: rgba(255,255,255,0.10);
-      stroke-width: 9;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      fill: rgba(255,255,255,0.06);
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 1.5;
     }
 
+    /* Rising gradient fill — clipped by progressClip */
     .track-fill {
+      fill: url(#trackGrad);
+      stroke: none;
+      filter: drop-shadow(0 0 6px rgba(255, 51, 102, 0.85)) drop-shadow(0 0 14px rgba(255, 107, 53, 0.45));
+    }
+
+    #progressRect {
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Static outline always on top — car markers sit above this */
+    .track-outline {
       fill: none;
-      stroke: url(#trackGrad);
-      stroke-width: 9;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      filter: drop-shadow(0 0 5px rgba(255, 51, 102, 0.9)) drop-shadow(0 0 12px rgba(255, 107, 53, 0.5));
-      transition: stroke-dashoffset 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      stroke: rgba(255,255,255,0.30);
+      stroke-width: 1.5;
     }
 
     .track-start {
-      fill: rgba(255,255,255,0.7);
+      fill: rgba(255,255,255,0.85);
     }
 
     /* Lap progress badge — GT7 style */
@@ -268,18 +275,33 @@
     <div class="track-wrap">
       <svg class="track-svg" viewBox="0 0 280 200" width="260" height="186" aria-hidden="true">
         <defs>
-          <linearGradient id="trackGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <!-- Vertical gradient: fills bottom-to-top -->
+          <linearGradient id="trackGrad" x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%"   stop-color="#ff3366"/>
             <stop offset="50%"  stop-color="#ff6b35"/>
             <stop offset="100%" stop-color="#ffd93d"/>
           </linearGradient>
+          <!--
+            progressClip: a full-height rect that starts translated
+            fully below the viewBox (nothing visible) and slides up
+            as likes increase. CSS transition on #progressRect handles
+            the smooth animation.
+          -->
+          <clipPath id="progressClip">
+            <rect id="progressRect" x="-10" y="0" width="300" height="210"
+                  style="transform: translateY(210px)"/>
+          </clipPath>
         </defs>
 
         <!--
-          Sardegna-style circuit — centerline traced from the GT7 map image.
+          Dragon Trail Seaside — approximate centerline.
           Clockwise from the bottom-left start/finish line.
+          NOTE: path will be replaced with a pixel-perfect trace once
+          the user supplies the OBS overlay source image.
         -->
-        <path id="trackBg" class="track-bg"
+
+        <!-- 1. Dim filled base shape -->
+        <path class="track-bg"
           d="M 34,170
              C 52,188 80,196 106,192
              C 132,188 156,176 170,160
@@ -293,7 +315,24 @@
              C 82,106  62,110  48,122
              C 34,134  28,152  34,170 Z"/>
 
+        <!-- 2. Gradient fill — rises from bottom as likes increase -->
         <path id="trackFill" class="track-fill"
+              clip-path="url(#progressClip)"
+          d="M 34,170
+             C 52,188 80,196 106,192
+             C 132,188 156,176 170,160
+             C 184,144 192,124 192,104
+             C 192,84  186,66  176,50
+             C 166,34  153,21  140,13
+             C 134,9   127,7   120,9
+             C 113,11  109,17  113,29
+             C 117,41  124,56  122,71
+             C 120,86  110,94  96,100
+             C 82,106  62,110  48,122
+             C 34,134  28,152  34,170 Z"/>
+
+        <!-- 3. Static outline on top — never obscured -->
+        <path class="track-outline"
           d="M 34,170
              C 52,188 80,196 106,192
              C 132,188 156,176 170,160
@@ -341,29 +380,19 @@
     const canvas      = document.getElementById('particles');
     const ctx         = canvas.getContext('2d');
     const particles   = [];
-    const trackFill   = document.getElementById('trackFill');
-    const trackPctEl  = document.getElementById('trackPct');
-
-    // ── Track stroke-dashoffset setup ──────────────────────────────
-    let pathLength = 0;
-
-    function initTrack() {
-      pathLength = trackFill.getTotalLength();
-      trackFill.style.strokeDasharray  = pathLength;
-      trackFill.style.strokeDashoffset = pathLength; // fully hidden at start
-    }
+    const progressRect = document.getElementById('progressRect');
+    const trackPctEl   = document.getElementById('trackPct');
+    const CLIP_H = 210; // matches the clipPath rect height / viewBox height buffer
 
     function updateTrack() {
-      const progress = Math.min(count / MAX_LIKES, 1);
-      const offset   = pathLength * (1 - progress);
-      trackFill.style.strokeDashoffset = offset;
+      const progress   = Math.min(count / MAX_LIKES, 1);
+      const translateY = CLIP_H * (1 - progress); // 210 = hidden, 0 = fully shown
+      progressRect.style.transform = `translateY(${translateY}px)`;
 
       const pct = Math.round(progress * 100);
       trackPctEl.textContent = pct + '%';
       trackPctEl.classList.toggle('complete', pct >= 100);
     }
-
-    window.addEventListener('load', initTrack);
 
     // ── Resize canvas ──────────────────────────────────────────────
     function resize() {
