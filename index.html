@@ -129,6 +129,70 @@
     .btn-ghost   { background: rgba(255, 255, 255, 0.10); color: rgba(255, 255, 255, 0.75); }
     .btn-danger  { background: rgba(255, 80,  80, 0.20); color: #f87171; }
 
+    /* ── D-pad ──────────────────────────────────────────────── */
+    .dpad-section {
+      margin-top: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .dpad-col { display: flex; flex-direction: column; gap: 5px; }
+
+    .dpad-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.38);
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 34px);
+      grid-template-rows: repeat(3, 34px);
+      gap: 3px;
+    }
+
+    .dpad-btn {
+      width: 34px; height: 34px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, transform 0.08s;
+      user-select: none;
+      font-family: inherit;
+    }
+    .dpad-btn:hover  { background: rgba(255, 255, 255, 0.16); }
+    .dpad-btn:active { transform: scale(0.90); background: rgba(255, 51, 102, 0.35); }
+    .dpad-btn.dpad-center {
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.08);
+      cursor: default;
+      font-size: 0.5rem;
+      color: rgba(255,255,255,0.2);
+    }
+    .dpad-empty { width: 34px; height: 34px; }
+
+    .dpad-info {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      min-width: 64px;
+    }
+    .dpad-info-emoji { font-size: 1.55rem; line-height: 1; }
+    .dpad-info-count { font-size: 0.75rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; }
+    .dpad-info-max   { font-size: 0.6rem; color: rgba(255,255,255,0.3); }
+
     #status {
       margin-top: 10px;
       font-size: 0.72rem;
@@ -268,6 +332,31 @@
       <button class="btn btn-ghost"   onclick="addLike()">+1 test</button>
     </div>
 
+    <!-- ── D-pad ───────────────────────────────────────────── -->
+    <div class="dpad-section">
+      <div class="dpad-col">
+        <div class="dpad-label">Manual control</div>
+        <div class="dpad">
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="addLike()"    title="+1 like">▲</button>
+          <div class="dpad-empty"></div>
+
+          <button class="dpad-btn" onclick="prevEmoji()"  title="Previous emoji">◀</button>
+          <div class="dpad-btn dpad-center">●</div>
+          <button class="dpad-btn" onclick="nextEmoji()"  title="Next emoji">▶</button>
+
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="removeLike()" title="-1 like">▼</button>
+          <div class="dpad-empty"></div>
+        </div>
+      </div>
+      <div class="dpad-info">
+        <div class="dpad-info-emoji" id="dpad-emoji-preview">👍</div>
+        <div class="dpad-info-count" id="dpad-count-preview">0</div>
+        <div class="dpad-info-max"   id="dpad-max-preview">/ 100</div>
+      </div>
+    </div>
+
     <div id="status"></div>
   </div>
 
@@ -319,6 +408,49 @@
     const badgeIcon      = document.getElementById('badge-icon');
     const statusEl       = document.getElementById('status');
 
+    // ── D-pad emoji list ───────────────────────────────────────
+    const EMOJIS = ['👍','❤️','🔥','⭐','🏎️','🚀','💯','🎉','🏁','⚡','💪','🎯','👏','😍','🤩'];
+    let emojiIndex = 0;
+
+    function getTrackEmojiMap() {
+      return JSON.parse(localStorage.getItem('trackEmojis') || '{}');
+    }
+
+    function applyEmoji(emoji) {
+      badgeIcon.textContent = emoji;
+      const prev = document.getElementById('dpad-emoji-preview');
+      if (prev) prev.textContent = emoji;
+      const map = getTrackEmojiMap();
+      map[document.getElementById('trackSelect').value] = emoji;
+      localStorage.setItem('trackEmojis', JSON.stringify(map));
+    }
+
+    function prevEmoji() {
+      emojiIndex = (emojiIndex - 1 + EMOJIS.length) % EMOJIS.length;
+      applyEmoji(EMOJIS[emojiIndex]);
+    }
+
+    function nextEmoji() {
+      emojiIndex = (emojiIndex + 1) % EMOJIS.length;
+      applyEmoji(EMOJIS[emojiIndex]);
+    }
+
+    function removeLike() {
+      if (count <= 0) return;
+      count--;
+      localStorage.setItem('likeCount', count);
+      countText.textContent = count;
+      updateTrack();
+      updateDpadPreview();
+    }
+
+    function updateDpadPreview() {
+      const countEl = document.getElementById('dpad-count-preview');
+      const maxEl   = document.getElementById('dpad-max-preview');
+      if (countEl) countEl.textContent = count;
+      if (maxEl)   maxEl.textContent   = '/ ' + maxLikes;
+    }
+
     // ── Track switching ────────────────────────────────────────
     function loadTrack(name) {
       const t = TRACKS[name];
@@ -348,7 +480,15 @@
       countText.setAttribute('x', cx);
       countText.setAttribute('y', cy + 9);
 
+      // Load per-track emoji
+      const emojiMap = getTrackEmojiMap();
+      const savedEmoji = emojiMap[name] || '👍';
+      emojiIndex = EMOJIS.indexOf(savedEmoji);
+      if (emojiIndex === -1) emojiIndex = 0;
+      applyEmoji(EMOJIS[emojiIndex]);
+
       updateTrack();
+      updateDpadPreview();
     }
 
     function onTrackChange() {
@@ -417,6 +557,7 @@
       localStorage.setItem('likeCount', count);
       countText.textContent = count;
       updateTrack();
+      updateDpadPreview();
     }
 
     function resetCount() {
@@ -424,6 +565,7 @@
       localStorage.setItem('likeCount', '0');
       countText.textContent = '0';
       updateTrack();
+      updateDpadPreview();
     }
 
     // ── UI ─────────────────────────────────────────────────────
@@ -517,6 +659,7 @@
       saveConfig();
 
       maxLikes = parseInt(document.getElementById('maxlikes').value, 10) || 100;
+      updateDpadPreview();
       const platform = document.getElementById('platform').value;
       const trigger  = (document.getElementById('trigger').value.trim()) || '!like';
 
