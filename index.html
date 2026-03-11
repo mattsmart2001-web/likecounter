@@ -257,7 +257,7 @@
       <div class="cfg-field">
         <label>Max likes (= 100 % fill)</label>
         <input id="maxlikes" type="number" value="100" min="1" max="99999"
-               onchange="maxLikes = parseInt(this.value, 10) || 100; updateTrack(); saveConfig()"/>
+               onchange="onMaxLikesChange()"/>
       </div>
     </div>
 
@@ -384,6 +384,12 @@
     function onTrackChange() {
       const name = document.getElementById('trackSelect').value;
       loadTrack(name);
+      saveConfig();
+    }
+
+    function onMaxLikesChange() {
+      maxLikes = parseInt(document.getElementById('maxlikes').value, 10) || 100;
+      updateTrack();
       saveConfig();
     }
 
