@@ -66,6 +66,24 @@
     }
 
     /* ── Gear button ────────────────────────────────────────── */
+    #test-btn {
+      position: fixed;
+      bottom: 14px;
+      right: 56px;
+      padding: 6px 14px;
+      background: rgba(255, 51, 102, 0.75);
+      border: none;
+      border-radius: 7px;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 200;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    #test-btn:hover { background: rgba(255, 51, 102, 1); }
+
     #gear-btn {
       position: fixed;
       bottom: 14px;
@@ -424,6 +442,9 @@
 
   <!-- Optional like counter badge -->
   <div id="count-badge">0</div>
+
+  <!-- Test like button (visible in browser, unobtrusive in OBS) -->
+  <button id="test-btn" onclick="addLike()" title="Test like">+1</button>
 
   <!-- Settings gear (use OBS Interact mode to click, or configure in browser first) -->
   <button id="gear-btn" onclick="toggleConfig()" title="Settings">⚙</button>
