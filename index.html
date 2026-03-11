@@ -350,8 +350,23 @@
 
       // Update all three path layers
       dimPath.setAttribute('d',    t.path);
-      fillPath.setAttribute('d',   t.path);
       strokePath.setAttribute('d', t.path);
+
+      // Find the infield subpath: split the compound path at each M command,
+      // measure lengths, and use the shorter one (inner road boundary = infield).
+      const parts = t.path.trim().split(/\s+(?=M)/);
+      let infieldD = t.path;
+      if (parts.length >= 2) {
+        const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        trackSvg.appendChild(tmp);
+        tmp.setAttribute('d', parts[0]);
+        const len0 = tmp.getTotalLength();
+        tmp.setAttribute('d', parts[1]);
+        const len1 = tmp.getTotalLength();
+        trackSvg.removeChild(tmp);
+        infieldD = len0 < len1 ? parts[0] : parts[1];
+      }
+      fillPath.setAttribute('d', infieldD);
 
       // Reposition badge at the true infield centre of this circuit
       const { x: cx, y: cy } = pathCentroid(strokePath);
