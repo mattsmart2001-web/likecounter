@@ -36,10 +36,6 @@
 
     .track-fill {
       fill: url(#trackGrad);
-      filter:
-        drop-shadow(0 0 6px  rgba(255,  51, 102, 0.90))
-        drop-shadow(0 0 16px rgba(255, 107,  53, 0.55))
-        drop-shadow(0 0 32px rgba(255,  51, 102, 0.30));
     }
 
     .track-stroke {
@@ -214,9 +210,9 @@
          xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="trackGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%"   stop-color="#ff3366"/>
-          <stop offset="50%"  stop-color="#ff6b35"/>
-          <stop offset="100%" stop-color="#ffd93d"/>
+          <stop offset="0%"   stop-color="#0033cc"/>
+          <stop offset="50%"  stop-color="#0077ff"/>
+          <stop offset="100%" stop-color="#00ccff"/>
         </linearGradient>
         <filter id="glowFilter" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -452,6 +448,17 @@
     }
 
     // ── Track switching ────────────────────────────────────────
+    function pathCentroid(pathEl, samples = 200) {
+      const len = pathEl.getTotalLength();
+      let sx = 0, sy = 0;
+      for (let i = 0; i < samples; i++) {
+        const pt = pathEl.getPointAtLength((i / samples) * len);
+        sx += pt.x;
+        sy += pt.y;
+      }
+      return { x: sx / samples, y: sy / samples };
+    }
+
     function loadTrack(name) {
       const t = TRACKS[name];
       if (!t) return;
@@ -472,9 +479,8 @@
       fillPath.setAttribute('d',   t.path);
       strokePath.setAttribute('d', t.path);
 
-      // Reposition centre badge
-      const cx = vbW / 2;
-      const cy = vbH / 2;
+      // Reposition centre badge to path centroid
+      const { x: cx, y: cy } = pathCentroid(fillPath);
       badgeIcon.setAttribute('x', cx);
       badgeIcon.setAttribute('y', cy - 9);
       countText.setAttribute('x', cx);
