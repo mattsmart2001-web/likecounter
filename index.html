@@ -328,10 +328,12 @@
       <button class="btn btn-ghost"   onclick="addLike()">+1 test</button>
     </div>
 
-    <!-- ── D-pad ───────────────────────────────────────────── -->
+    <!-- ── D-pads ──────────────────────────────────────────── -->
     <div class="dpad-section">
+
+      <!-- Likes / emoji D-pad -->
       <div class="dpad-col">
-        <div class="dpad-label">Manual control</div>
+        <div class="dpad-label">Likes &amp; emoji</div>
         <div class="dpad">
           <div class="dpad-empty"></div>
           <button class="dpad-btn" onclick="addLike()"    title="+1 like">▲</button>
@@ -346,11 +348,32 @@
           <div class="dpad-empty"></div>
         </div>
       </div>
+
+      <!-- Live count/emoji info -->
       <div class="dpad-info">
         <div class="dpad-info-emoji" id="dpad-emoji-preview">👍</div>
         <div class="dpad-info-count" id="dpad-count-preview">0</div>
         <div class="dpad-info-max"   id="dpad-max-preview">/ 100</div>
       </div>
+
+      <!-- Badge position D-pad -->
+      <div class="dpad-col">
+        <div class="dpad-label">Badge position</div>
+        <div class="dpad">
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="moveBadge(0,-BADGE_STEP)" title="Move up">▲</button>
+          <div class="dpad-empty"></div>
+
+          <button class="dpad-btn" onclick="moveBadge(-BADGE_STEP,0)" title="Move left">◀</button>
+          <button class="dpad-btn dpad-center" onclick="resetBadgePos()" title="Reset position">↺</button>
+          <button class="dpad-btn" onclick="moveBadge(BADGE_STEP,0)"  title="Move right">▶</button>
+
+          <div class="dpad-empty"></div>
+          <button class="dpad-btn" onclick="moveBadge(0,BADGE_STEP)"  title="Move down">▼</button>
+          <div class="dpad-empty"></div>
+        </div>
+      </div>
+
     </div>
 
     <div id="status"></div>
@@ -447,6 +470,37 @@
       if (maxEl)   maxEl.textContent   = '/ ' + maxLikes;
     }
 
+    // ── Badge position ─────────────────────────────────────────
+    let badgeOffset = { dx: 0, dy: 0 };
+    const BADGE_STEP = 5;
+
+    function getBadgePosMap() {
+      return JSON.parse(localStorage.getItem('badgePos') || '{}');
+    }
+
+    function saveBadgePos() {
+      const map = getBadgePosMap();
+      map[document.getElementById('trackSelect').value] = badgeOffset;
+      localStorage.setItem('badgePos', JSON.stringify(map));
+    }
+
+    function applyBadgeOffset() {
+      countBadge.setAttribute('transform', `translate(${badgeOffset.dx},${badgeOffset.dy})`);
+    }
+
+    function moveBadge(dx, dy) {
+      badgeOffset.dx += dx;
+      badgeOffset.dy += dy;
+      applyBadgeOffset();
+      saveBadgePos();
+    }
+
+    function resetBadgePos() {
+      badgeOffset = { dx: 0, dy: 0 };
+      applyBadgeOffset();
+      saveBadgePos();
+    }
+
     // ── Track switching ────────────────────────────────────────
     function pathCentroid(pathEl, samples = 200) {
       const len = pathEl.getTotalLength();
@@ -485,6 +539,11 @@
       badgeIcon.setAttribute('y', cy - 9);
       countText.setAttribute('x', cx);
       countText.setAttribute('y', cy + 9);
+
+      // Load per-track badge position
+      const posMap = getBadgePosMap();
+      badgeOffset = posMap[name] ? { ...posMap[name] } : { dx: 0, dy: 0 };
+      applyBadgeOffset();
 
       // Load per-track emoji
       const emojiMap = getTrackEmojiMap();
