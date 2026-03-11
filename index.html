@@ -37,9 +37,9 @@
     .track-fill {
       fill: url(#trackGrad);
       filter:
-        drop-shadow(0 0 6px  rgba(255,  51, 102, 0.90))
-        drop-shadow(0 0 16px rgba(255, 107,  53, 0.55))
-        drop-shadow(0 0 32px rgba(255,  51, 102, 0.30));
+        drop-shadow(0 0 6px  rgba(  0, 119, 255, 0.90))
+        drop-shadow(0 0 16px rgba(  0, 119, 255, 0.55))
+        drop-shadow(0 0 32px rgba(  0, 204, 255, 0.30));
     }
 
     .track-stroke {
@@ -150,9 +150,9 @@
          xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="trackGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%"   stop-color="#ff3366"/>
-          <stop offset="50%"  stop-color="#ff6b35"/>
-          <stop offset="100%" stop-color="#ffd93d"/>
+          <stop offset="0%"   stop-color="#0033cc"/>
+          <stop offset="50%"  stop-color="#0077ff"/>
+          <stop offset="100%" stop-color="#00ccff"/>
         </linearGradient>
         <filter id="glowFilter" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -169,7 +169,7 @@
       <path id="track-dim-path" class="track-dim" fill-rule="evenodd" d=""/>
 
       <!-- 2. Rising gradient fill -->
-      <path id="track-fill-path" class="track-fill" fill-rule="evenodd" clip-path="url(#progressClip)" d=""/>
+      <path id="track-fill-path" class="track-fill" clip-path="url(#progressClip)" d=""/>
 
       <!-- 3. Outline always on top -->
       <path id="track-stroke-path" class="track-stroke" d=""/>
