@@ -216,35 +216,16 @@
       </div>
 
       <div class="cfg-field">
-        <label>Platform</label>
-        <select id="platform" onchange="onPlatformChange()">
-          <option value="twitch">Twitch</option>
-          <option value="youtube">YouTube</option>
-        </select>
-      </div>
-
-      <!-- Twitch only -->
-      <div class="cfg-field" id="field-channel">
-        <label>Channel name</label>
-        <input id="channel" type="text" placeholder="yourchannelname" autocomplete="off"/>
-      </div>
-
-      <!-- YouTube only -->
-      <div class="cfg-field" id="field-apikey" style="display:none">
         <label>YouTube API Key</label>
         <input id="apikey" type="password" placeholder="AIza…" autocomplete="off"/>
       </div>
-      <div class="cfg-field" id="field-videoid" style="display:none">
+      <div class="cfg-field">
         <label>Live Video ID</label>
         <input id="videoid" type="text" placeholder="dQw4w9WgXcQ" autocomplete="off"/>
       </div>
     </div>
 
     <div class="cfg-row">
-      <div class="cfg-field">
-        <label>Chat trigger (word or emoji in message)</label>
-        <input id="trigger" type="text" placeholder="!like  or  ❤️" value="!like"/>
-      </div>
       <div class="cfg-field">
         <label>Max likes (= 100 % fill)</label>
         <input id="maxlikes" type="number" value="100" min="1" max="99999"
@@ -296,10 +277,7 @@
     let count    = 0;
     let maxLikes = 100;
     let CLIP_H   = 360;
-    let ws       = null;
     let ytTimer  = null;
-    let ytToken  = null;
-    let ytChatId = null;
 
     const trackSvg       = document.getElementById('track-svg');
     const progressRect   = document.getElementById('progressRect');
@@ -389,11 +367,8 @@
       const cfg = JSON.parse(localStorage.getItem('streamCfg') || '{}');
 
       if (cfg.track)    document.getElementById('trackSelect').value = cfg.track;
-      if (cfg.platform) document.getElementById('platform').value    = cfg.platform;
-      if (cfg.channel)  document.getElementById('channel').value     = cfg.channel;
       if (cfg.apikey)   document.getElementById('apikey').value      = cfg.apikey;
       if (cfg.videoid)  document.getElementById('videoid').value     = cfg.videoid;
-      if (cfg.trigger)  document.getElementById('trigger').value     = cfg.trigger;
       if (cfg.maxlikes) document.getElementById('maxlikes').value    = cfg.maxlikes;
 
       maxLikes = parseInt(cfg.maxlikes || '100', 10);
@@ -410,11 +385,7 @@
       }
       loadTrack(trackSel.value);
 
-      onPlatformChange();
-
-      if (cfg.platform === 'twitch' && cfg.channel) {
-        connect();
-      } else if (cfg.platform === 'youtube' && cfg.apikey && cfg.videoid) {
+      if (cfg.apikey && cfg.videoid) {
         connect();
       }
     }
@@ -422,11 +393,8 @@
     function saveConfig() {
       localStorage.setItem('streamCfg', JSON.stringify({
         track:        document.getElementById('trackSelect').value,
-        platform:     document.getElementById('platform').value,
-        channel:      document.getElementById('channel').value,
         apikey:       document.getElementById('apikey').value,
         videoid:      document.getElementById('videoid').value,
-        trigger:      document.getElementById('trigger').value,
         maxlikes:     document.getElementById('maxlikes').value,
         badgeVisible: countBadge.style.display === 'inline',
       }));
@@ -459,83 +427,40 @@
       statusEl.className   = type;
     }
 
-    function onPlatformChange() {
-      const isYT = document.getElementById('platform').value === 'youtube';
-      document.getElementById('field-channel').style.display = isYT ? 'none' : '';
-      document.getElementById('field-apikey').style.display  = isYT ? ''     : 'none';
-      document.getElementById('field-videoid').style.display = isYT ? ''     : 'none';
-    }
-
     function toggleBadge() {
       countBadge.style.display = countBadge.style.display === 'inline' ? 'none' : 'inline';
       saveConfig();
     }
 
-    // ── Twitch IRC ─────────────────────────────────────────────
-    function connectTwitch(channel, trigger) {
-      setStatus('Connecting to Twitch…', 'warn');
-      ws = new WebSocket('wss://irc-ws.chat.twitch.tv');
-
-      ws.onopen = () => {
-        ws.send('NICK justinfan' + Math.floor(Math.random() * 80000 + 1000));
-        ws.send('JOIN #' + channel.toLowerCase());
-        setStatus(`Connected — listening in #${channel} for "${trigger}"`, 'ok');
-      };
-
-      ws.onmessage = (e) => {
-        if (e.data.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
-        if (e.data.includes('PRIVMSG')) {
-          const match = e.data.match(/PRIVMSG #\S+ :(.*)/);
-          if (match && match[1].toLowerCase().includes(trigger.toLowerCase())) addLike();
-        }
-      };
-
-      ws.onerror = () => setStatus('Twitch WebSocket error.', 'err');
-      ws.onclose = () => { if (ws) setStatus('Disconnected from Twitch.', 'err'); };
+    // ── YouTube like-count polling ─────────────────────────────
+    async function connectYouTube(apiKey, videoId) {
+      setStatus('Connecting…', 'warn');
+      ytTimer = -1; // mark as active before first poll
+      await pollYT(apiKey, videoId);
     }
 
-    // ── YouTube Live Chat ──────────────────────────────────────
-    async function connectYouTube(apiKey, videoId, trigger) {
-      setStatus('Fetching live stream details…', 'warn');
+    async function pollYT(apiKey, videoId) {
+      if (ytTimer === null) return; // disconnected
       try {
         const res  = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${apiKey}`
+          `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${apiKey}`
         );
         const data = await res.json();
         if (data.error) throw new Error(data.error.message);
+        if (!data.items?.length) throw new Error('Video not found.');
 
-        ytChatId = data.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
-        if (!ytChatId) throw new Error('No active live chat found for this video ID.');
-
-        setStatus(`Connected — polling for "${trigger}"`, 'ok');
-        pollYT(apiKey, trigger);
+        const likes = parseInt(data.items[0].statistics?.likeCount || '0', 10);
+        count = likes;
+        localStorage.setItem('likeCount', count);
+        countText.textContent = count;
+        updateTrack();
+        setStatus('Connected — polling YouTube likes', 'ok');
       } catch (err) {
         setStatus('YouTube error: ' + err.message, 'err');
+        ytTimer = null;
+        return;
       }
-    }
-
-    async function pollYT(apiKey, trigger) {
-      if (!ytChatId) return;
-      try {
-        let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${ytChatId}&part=snippet&key=${apiKey}&maxResults=200`;
-        if (ytToken) url += `&pageToken=${ytToken}`;
-
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-
-        if (ytToken) {
-          for (const msg of (data.items || [])) {
-            const text = msg.snippet?.displayMessage || '';
-            if (text.toLowerCase().includes(trigger.toLowerCase())) addLike();
-          }
-        }
-
-        ytToken = data.nextPageToken;
-        ytTimer = setTimeout(() => pollYT(apiKey, trigger), data.pollingIntervalMillis || 5000);
-      } catch (err) {
-        setStatus('YouTube poll error: ' + err.message, 'err');
-      }
+      ytTimer = setTimeout(() => pollYT(apiKey, videoId), 15000);
     }
 
     // ── Connect / Disconnect ───────────────────────────────────
@@ -544,26 +469,15 @@
       saveConfig();
 
       maxLikes = parseInt(document.getElementById('maxlikes').value, 10) || 100;
-      const platform = document.getElementById('platform').value;
-      const trigger  = (document.getElementById('trigger').value.trim()) || '!like';
-
-      if (platform === 'twitch') {
-        const channel = document.getElementById('channel').value.trim();
-        if (!channel) { setStatus('Enter a channel name.', 'err'); return; }
-        connectTwitch(channel, trigger);
-      } else {
-        const apiKey  = document.getElementById('apikey').value.trim();
-        const videoId = document.getElementById('videoid').value.trim();
-        if (!apiKey || !videoId) { setStatus('Enter your API key and Video ID.', 'err'); return; }
-        connectYouTube(apiKey, videoId, trigger);
-      }
+      const apiKey  = document.getElementById('apikey').value.trim();
+      const videoId = document.getElementById('videoid').value.trim();
+      if (!apiKey || !videoId) { setStatus('Enter your API key and Video ID.', 'err'); return; }
+      connectYouTube(apiKey, videoId);
     }
 
     function disconnect() {
-      if (ws)      { ws.close(); ws = null; }
-      if (ytTimer) { clearTimeout(ytTimer); ytTimer = null; }
-      ytToken  = null;
-      ytChatId = null;
+      if (ytTimer !== null) { clearTimeout(ytTimer); ytTimer = null; }
+      setStatus('Disconnected.', '');
     }
 
     // ── Init ───────────────────────────────────────────────────
