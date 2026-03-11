@@ -341,7 +341,7 @@
       fillPath.setAttribute('d', infieldD);
 
       // Reposition badge at the true infield centre of this circuit
-      const { x: cx, y: cy } = pathCentroid(strokePath);
+      const { x: cx, y: cy } = pathCentroid(fillPath);
       badgeIcon.setAttribute('x', cx);
       badgeIcon.setAttribute('y', cy - 9);
       countText.setAttribute('x', cx);
